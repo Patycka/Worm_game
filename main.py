@@ -1,5 +1,11 @@
 # # Obsługa klawiatury - początek
 
+'''
+Tworzenie listy
+https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
+
+'''
+
 from turtle import*
 # View -> Tool windows -> Python Packages (pygame installation in pycharm) or pip install pygame in VS
 import random
@@ -24,8 +30,19 @@ def set_direction(key):
 
 def ini_keyboard():
     tracer(0,0)
+
+    plansza = []
+    global rozmiar_planszy
+    worm_list = []
+
+    fill_board_list(plansza, rozmiar_planszy)
+
     create_board()
-    add_elements()
+    food = Turtle()
+    kamienie = Turtle()
+    worm = Turtle()
+    add_elements(food, kamienie, worm)
+    add_worm_cor(worm, worm_list)
 
     update()
     for direction in ["", "Up", "Left", "Right", "Down", "q"]:
@@ -45,7 +62,9 @@ def create_board():
     global rozmiar_planszy
     odstep = int(BOK / rozmiar_planszy)
     pen = Turtle()
-    pen.speed(0)
+
+    current_score()
+
     for a in range(rozmiar_planszy+1):
         # linie w pionie
         pen.penup()
@@ -60,15 +79,12 @@ def create_board():
     pen.hideturtle()
 
 
-def add_elements():
+def add_elements(food, kamienie, worm):
     global liczba_pol_z_jedzeniem
     global liczba_kamieni
 
-    food = Turtle()
     add_squares(food, liczba_pol_z_jedzeniem, "green")
-    kamienie = Turtle()
     add_squares(kamienie, liczba_kamieni, "blue")
-    worm = Turtle()
     add_squares(worm, 1, "orange")
     worm.direction = "Stop"
 
@@ -91,7 +107,26 @@ def add_squares(obj, n, color):
         obj.end_fill()
         obj.hideturtle()
 
-def current_score():
-    pass
+def current_score(score=0):
+    pen = Turtle()
+    pen.penup()
+    pen.goto(0, Y)
+    pen.write(f'Your score is: {score}', font=10, align='center')
+    pen.hideturtle()
+    
+
+def fill_board_list(plansza, rozmiar):
+    for i in range(rozmiar):
+        wiersz = []
+        for i in range(rozmiar):
+            # dodawanie kolumn
+            wiersz.append(0)
+        plansza.append(wiersz)
+        print(wiersz)
+
+def add_worm_cor(worm, worm_list):
+    worm_tuple = (worm.xcor(), worm.ycor())
+    worm_list.append(worm_tuple)
+    print(worm_list)
 
 ini_keyboard()
