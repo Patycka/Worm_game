@@ -9,6 +9,7 @@ https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
 from turtle import*
 # View -> Tool windows -> Python Packages (pygame installation in pycharm) or pip install pygame in VS
 import random
+import time
 
 pressed_key = ""
 rozmiar_planszy = 20
@@ -20,7 +21,9 @@ liczba_kamieni = 4
 liczba_pol_z_jedzeniem = 3
 margx = 20
 margy = 50
+odstep = int(BOK / rozmiar_planszy)
 
+# Closure
 def set_direction(key):
     def result():
         global pressed_key
@@ -48,6 +51,13 @@ def ini_keyboard():
     for direction in ["", "Up", "Left", "Right", "Down", "q"]:
         onkey(set_direction(direction.lower()), direction)
     listen()
+    while pressed_key != "q":
+        move_worm(worm)
+        update()
+        time.sleep(1)
+        clear()
+    # zamyka okno
+    bye()
     done()
 
 def create_board():
@@ -60,7 +70,6 @@ def create_board():
     screen.title("Dżdżownica")
 
     global rozmiar_planszy
-    odstep = int(BOK / rozmiar_planszy)
     pen = Turtle()
 
     current_score()
@@ -90,13 +99,13 @@ def add_elements(food, kamienie, worm):
 
 
 def add_squares(obj, n, color):
-    odstep = int(BOK / rozmiar_planszy)
     for _ in range(n):
-        obj.penup()
+
         # X powinien byc od -X do Y-1*odstep aby nie wychodzil poza kratki
         x = random.randint(X/odstep, (Y/odstep)-1)*odstep
         # Y powinien byc od -X+1*odstep do Y aby nie wychodzil poza kratki
         y = random.randint((X/odstep)+1, Y/odstep)*odstep
+        obj.penup()
         obj.goto(x, y)
         obj.color(color)
         obj.begin_fill()
@@ -118,15 +127,15 @@ def current_score(score=0):
 def fill_board_list(plansza, rozmiar):
     for i in range(rozmiar):
         wiersz = []
-        for i in range(rozmiar):
+        for _ in range(rozmiar):
             # dodawanie kolumn
             wiersz.append(0)
         plansza.append(wiersz)
-        print(wiersz)
 
 def add_worm_cor(worm, worm_list):
     worm_tuple = (worm.xcor(), worm.ycor())
     worm_list.append(worm_tuple)
-    print(worm_list)
 
+def move_worm():
+    print("move worm")
 ini_keyboard()
