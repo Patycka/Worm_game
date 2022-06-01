@@ -14,15 +14,12 @@ import time
 
 pressed_key = ""
 rozmiar_planszy = 20
-X = -300
-Y = 300
-BOK = abs(X) + abs(Y)
-czas_odswiezania = 1
+szerokosc_okna = 600
 liczba_kamieni = 3
 liczba_pol_z_jedzeniem = 2
 margx = 20
 margy = 50
-odstep = int(BOK / rozmiar_planszy)
+odstep = (szerokosc_okna / rozmiar_planszy)
 
 # Closure (funkcja anonimowa)
 def set_direction(key):
@@ -45,7 +42,8 @@ def ini_keyboard():
     list_kamienie = []
     worm = Turtle()
     add_elements(list_food, list_kamienie, plansza)
-    add_single_square(worm, "orange")
+    add_single_square(worm, "orange", plansza)
+    print_board_list(plansza)
     add_worm_cor(worm, worm_list)
 
     update()
@@ -55,6 +53,7 @@ def ini_keyboard():
     listen()
     while pressed_key != "q":
         move_worm(worm)
+        add_worm_cor(worm, worm_list)
         update()
         time.sleep(0.5)
         clear()
@@ -68,7 +67,7 @@ def create_board():
 
     screen = Screen()
     screen.bgcolor("grey")
-    screen.setup(BOK+margx, BOK+margy)
+    screen.setup(szerokosc_okna+margx, szerokosc_okna+margy)
     screen.title("Dżdżownica")
 
     global rozmiar_planszy
@@ -76,17 +75,20 @@ def create_board():
 
     current_score()
 
-    for a in range(rozmiar_planszy+1):
+    # Okna ma wymiar (-szerokosc_okna/2, szerokosc_okna/2)
+    a = -szerokosc_okna/2
+    b = szerokosc_okna/2
+    for i in range(rozmiar_planszy+1):
         # linie w pionie
         pen.penup()
-        pen.goto(X + a*odstep, Y)
+        pen.goto(a + i*odstep, b)
         pen.pendown()
-        pen.goto(X + a*odstep, -Y)
+        pen.goto(a + i*odstep, -b)
         # linie w poziomie
         pen.penup()
-        pen.goto(X, Y -a*odstep)
+        pen.goto(a, b - i*odstep)
         pen.pendown()
-        pen.goto(-X, Y -a*odstep)
+        pen.goto(-a, b -i*odstep)
     pen.hideturtle()
 
 
@@ -102,27 +104,49 @@ def add_squares(list_obj, n, color, plansza):
     for _ in range(n):
         obj = Turtle()
         list_obj.append(obj)
-        add_single_square(obj, color)
+        add_single_square(obj, color, plansza)
 
-def add_single_square(obj, color):
-        # X powinien byc od -X do Y-1*odstep aby nie wychodzil poza kratki
-        x = random.randint(X/odstep, (Y/odstep)-1)*odstep + odstep/2
-        # Y powinien byc od -X+1*odstep do Y aby nie wychodzil poza kratki
-        y = random.randint((X/odstep)+1, Y/odstep)*odstep - odstep/2
-        obj.shape("square")
-        obj.color(color)
+def add_single_square(obj, color, plansza):
+        a = -szerokosc_okna/2
+        b = szerokosc_okna/2
+        index_wiersze = 0
+        index_kolumny = 0
+ 
+        # Losowanie kratek od 1 do rozmiaru planszy
+        x = random.randint(1, rozmiar_planszy)
+        index_kolumny = x-1          
+        y = random.randint(1, rozmiar_planszy)
+        index_wiersze = rozmiar_planszy - y
+
+        # Sprawdzenie czy nie powtarza się element na danym miejscu, jeżeli tak to ponawia losowanie
+        while plansza[index_wiersze][index_kolumny] == "e":
+            x = random.randint(1, rozmiar_planszy)
+            index_kolumny = x-1          
+            y = random.randint(1, rozmiar_planszy)
+            index_wiersze = rozmiar_planszy - y            
+
+        # Zamiana kratek na współrzędne na planszy
+        x = x *odstep - szerokosc_okna/2 - odstep/2
+        y = y * odstep - szerokosc_okna/2 - odstep/2
+
+        update_board_list(plansza, index_wiersze, index_kolumny)
+
         obj.penup()
-        obj.goto(x, y)
+        obj.shape("square")
         ilosc_kratek = rozmiar_planszy*rozmiar_planszy
-        pole_kwadratu = (abs(X)*abs(Y)) / (ilosc_kratek)
+        pole_kwadratu = (abs(a)*abs(b)) / (ilosc_kratek)
         bok = sqrt(pole_kwadratu)/10
-        obj.shapesize(bok, bok)
-        print(obj.xcor(), obj.ycor())
+        obj.shapesize(bok)
+        obj.color(color)
+        obj.goto(x, y)
+        # if color == "orange":
+        #     obj.stamp()
+        #     obj.dot(15, 'red')
 
 def current_score(score=0):
     pen = Turtle()
     pen.penup()
-    pen.goto(0, Y)
+    pen.goto(0, szerokosc_okna/2)
     pen.write(f'Your score is: {score}', font=10, align='center')
     pen.hideturtle()
     
@@ -136,9 +160,21 @@ def fill_board_list(plansza):
             wiersz.append("p")
         plansza.append(wiersz)
 
+def update_board_list(plansza, wiersze, kolumny):
+    '''
+    Aktualizuje plansze jezeli sa nowe elementy, wstawia e w miejscu elementu
+    '''
+    plansza[wiersze][kolumny] = "e"
+
+def print_board_list(plansza):
+    global rozmiar_planszy
+    for numer_wiersza in range(rozmiar_planszy):
+        print(plansza[numer_wiersza])
+
 def add_worm_cor(worm, worm_list):
     worm_tuple = (worm.xcor(), worm.ycor())
-    worm_list.append(worm_tuple)
+    if worm_tuple not in worm_list:
+        worm_list.append(worm_tuple)
 
 def move_worm(worm):
     global rozmiar_planszy
