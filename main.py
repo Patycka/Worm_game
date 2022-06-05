@@ -51,6 +51,7 @@ def main():
     worm_list = []
     list_food = []
     list_kamienie = []
+    worm_segments = []
 
     # Zainicjalizowanie planszy jako listy wierszy, gdzie każdy wiersz jest listą pól.
     # Początkowo wszystkie pola są wypełnione wartościami "p" (puste)
@@ -60,6 +61,7 @@ def main():
     create_board(score_obj)
 
     worm = Turtle()
+    worm_segments.append(worm)
     
     # Dodanie elementów na plansze w losowo wybranych miejscach: jedzenie, kamienie
     add_elements(list_food, list_kamienie, plansza)
@@ -82,11 +84,14 @@ def main():
             break
         if is_worm_eat_food(worm_list, list_food, plansza):
             score += 1
-            print(score)
             current_score(score_obj, score)
-        move_worm(worm)
+            worm_segment = Turtle()
+            worm_segments.append(worm_segment)
+            add_worm_segment(worm_list, worm_segments[score], plansza)
+            add_worm_cor(worm_segments[score], worm_list)
+        move_worm(worm_segments)
         # Aktualizacja współrzędnych dżdżwonicy
-        update_worm_cor(worm, worm_list)
+        update_worm_cor(worm_segments, worm_list)
         update()
         time.sleep(0.2)
         clear()
@@ -142,30 +147,34 @@ def add_squares(list_obj, n, color, plansza):
         list_obj.append(obj)
         add_single_square(obj, color, plansza)
 
-def add_single_square(obj, color, plansza):
+def add_single_square(obj, color, plansza, xcor=10000, ycor=10000):
         a = -szerokosc_okna/2
         b = szerokosc_okna/2
         index_wiersze = 0
         index_kolumny = 0
  
         # Losowanie kratek od 1 do rozmiaru planszy
-        x = random.randint(1, rozmiar_planszy)
-        index_kolumny = x-1          
-        y = random.randint(1, rozmiar_planszy)
-        index_wiersze = rozmiar_planszy - y
-
-        # Sprawdzenie czy nie powtarza się element na danym miejscu, jeżeli tak to ponawia losowanie
-        while plansza[index_wiersze][index_kolumny] == "e":
+        if xcor ==10000 and ycor == 10000:
             x = random.randint(1, rozmiar_planszy)
             index_kolumny = x-1          
             y = random.randint(1, rozmiar_planszy)
-            index_wiersze = rozmiar_planszy - y            
+            index_wiersze = rozmiar_planszy - y
 
-        # Zamiana kratek na współrzędne na planszy
-        x = x *odstep - szerokosc_okna/2 - odstep/2
-        y = y * odstep - szerokosc_okna/2 - odstep/2
+            # Sprawdzenie czy nie powtarza się element na danym miejscu, jeżeli tak to ponawia losowanie
+            while plansza[index_wiersze][index_kolumny] == "e":
+                x = random.randint(1, rozmiar_planszy)
+                index_kolumny = x-1
+                y = random.randint(1, rozmiar_planszy)
+                index_wiersze = rozmiar_planszy - y
 
-        update_board_list(plansza, index_wiersze, index_kolumny)
+            # Zamiana kratek na współrzędne na planszy
+            x = x *odstep - szerokosc_okna/2 - odstep/2
+            y = y * odstep - szerokosc_okna/2 - odstep/2
+
+            update_board_list(plansza, index_wiersze, index_kolumny)
+        else:
+            x = xcor
+            y = ycor
 
         obj.penup()
         obj.shape("square")
@@ -175,9 +184,23 @@ def add_single_square(obj, color, plansza):
         obj.shapesize(bok)
         obj.color(color)
         obj.goto(x, y)
-        # if color == "orange":
-        #     obj.stamp()
-        #     obj.dot(15, 'red')
+
+def add_worm_segment(worm_list, worm_segment, plansza):
+    global pressed_key
+    # Ustawienie nowego segmentu najpierw w pozycji ostatniego segmentu
+    worm_cor = worm_list[-1]
+    x = worm_cor[0]
+    y = worm_cor[1]
+    if pressed_key == "up":
+        y = y-odstep
+    elif pressed_key == "down":
+        y = y+odstep
+    elif pressed_key == "left":
+        x = x+odstep
+    elif pressed_key == "right":
+        x = x-odstep
+    
+    add_single_square(worm_segment, "orange", plansza, x, y)
 
 def current_score(obj, score):
     obj.penup()
@@ -215,26 +238,33 @@ def add_worm_cor(worm, worm_list):
     if worm_tuple not in worm_list:
         worm_list.append(worm_tuple)
 
-def update_worm_cor(worm, worm_list):
-    worm_tuple = (worm.xcor(), worm.ycor())
-    worm_list[0] = worm_tuple
+def update_worm_cor(worm_segments, worm_list):
+    for i in range(len(worm_segments)):
+        worm_list[i] = (worm_segments[i].xcor(), worm_segments[i].ycor())
 
-def move_worm(worm):
+def move_worm(worm_segments):
     global rozmiar_planszy
     global pressed_key
-    
+
+    i = 1
+    while i < len(worm_segments):
+        worm_segments[-i].goto(worm_segments[-i-1].xcor(),  worm_segments[-i-1].ycor())
+        i += 1
+
+    # Logika dla głowy dżdżownicy
     if pressed_key == "up":
-        y = worm.ycor()
-        worm.sety(y+odstep)
+        y = worm_segments[0].ycor()
+        worm_segments[0].sety(y+odstep)
     elif pressed_key == "down":
-        y = worm.ycor()
-        worm.sety(y-odstep)
+        y = worm_segments[0].ycor()
+        worm_segments[0].sety(y-odstep)
     elif pressed_key == "left":
-        x = worm.xcor()
-        worm.setx(x-odstep)
+        x = worm_segments[0].xcor()
+        worm_segments[0].setx(x-odstep)
     elif pressed_key == "right":
-        x = worm.xcor()
-        worm.setx(x+odstep)
+        x = worm_segments[0].xcor()
+        worm_segments[0].setx(x+odstep)
+
 
 def is_worm_outside_board(obj):
     if (obj.xcor() > szerokosc_okna/2) or (obj.xcor() < -szerokosc_okna/2) or \
@@ -248,7 +278,6 @@ def is_worm_collide_obj(worm_list, obj_list, plansza=0, color = 0):
         for worm in worm_list:
             if (worm[0] == obj.xcor()) and (worm[1] == obj.ycor()):
                 if color == "green":
-                    print("Add elem")
                     add_single_square(obj, color, plansza)
                 return True
     return False
