@@ -1,27 +1,23 @@
-# # Obsługa klawiatury - początek
-
-'''
-Tworzenie listy
-https://www.geeksforgeeks.org/python-using-2d-arrays-lists-the-right-way/
-
-'''
-
 from math import sqrt
+from operator import truediv
 from turtle import*
-# View -> Tool windows -> Python Packages (pygame installation in pycharm) or pip install pygame in VS
 import random
 import time
 
-pressed_key = ""
+# ---- Stałe ---------
 rozmiar_planszy = 20
 szerokosc_okna = 600
 liczba_kamieni = 3
 liczba_pol_z_jedzeniem = 2
 margx = 20
-margy = 50
+margy = 60
 odstep = (szerokosc_okna / rozmiar_planszy)
 
-# Closure (funkcja anonimowa)
+
+# ------------ Obsługa klawiatury - początek ----------
+
+pressed_key = ""
+
 def set_direction(key):
     def result():
         global pressed_key
@@ -30,38 +26,78 @@ def set_direction(key):
     return result
 
 def ini_keyboard():
-    tracer(0,0)
 
-    plansza = []
-    worm_list = []
-
-    fill_board_list(plansza)
-
-    create_board()
-    list_food = []
-    list_kamienie = []
-    worm = Turtle()
-    add_elements(list_food, list_kamienie, plansza)
-    add_single_square(worm, "orange", plansza)
-    print_board_list(plansza)
-    add_worm_cor(worm, worm_list)
-
-    update()
     for direction in ["", "Up", "Left", "Right", "Down", "q"]:
         onkey(set_direction(direction.lower()), direction)
     hideturtle()
     listen()
+
+# ----------- Obsługa klawiatury - koniec ----------
+
+
+
+# ------------ Funkcja główna - początek ----------
+def main():
+
+    ini_keyboard()
+
+    tracer(0,0)
+    score_obj = Turtle()
+    score = 0
+
+    # Zainicjalizowanie stuktury danych, plansza (docelowo macierz) 
+    # i worm_list (docelowo lista krotek współrzędnych dżdżownicy)
+    plansza = []
+    worm_list = []
+    list_food = []
+    list_kamienie = []
+
+    # Zainicjalizowanie planszy jako listy wierszy, gdzie każdy wiersz jest listą pól.
+    # Początkowo wszystkie pola są wypełnione wartościami "p" (puste)
+    fill_board_list(plansza)
+
+    # Narysowanie kratek na szarym tle
+    create_board(score_obj)
+
+    worm = Turtle()
+    
+    # Dodanie elementów na plansze w losowo wybranych miejscach: jedzenie, kamienie
+    add_elements(list_food, list_kamienie, plansza)
+    # Dodanie obiektu dżdżownica do rysunku
+    add_single_square(worm, "orange", plansza)
+
+    # Wyświetlenie zaktualizowanej struktury danych planszy, w miejscach gdzie jest element (jedzenie, kamienie)
+    # jest znak "e" a na pozostałych miejscach gdzie nie ma żadnego elementu jest "p"
+    print_board_list(plansza)
+
+    # Dodanie współrzędnych dżdżownicy do listy krotek
+    add_worm_cor(worm, worm_list)
+
+    update()
+
     while pressed_key != "q":
+        # Jeżeli dżdżownica wyjdzie poza planszę lub natrafi na kamień to koniec gry
+        if is_worm_outside_board(worm) or is_worm_collide_stone(worm_list, list_kamienie):
+            print_game_over()
+            break
+        if is_worm_eat_food(worm_list, list_food, plansza):
+            score += 1
+            print(score)
+            current_score(score_obj, score)
         move_worm(worm)
-        add_worm_cor(worm, worm_list)
+        # Aktualizacja współrzędnych dżdżwonicy
+        update_worm_cor(worm, worm_list)
         update()
-        time.sleep(0.5)
+        time.sleep(0.2)
         clear()
+
     # zamyka okno
     bye()
     done()
 
-def create_board():
+# ----------- Funkcja główna koniec - koniec ----------
+
+def create_board(score_obj):
     global margx
     global margy
 
@@ -73,7 +109,7 @@ def create_board():
     global rozmiar_planszy
     pen = Turtle()
 
-    current_score()
+    current_score(score_obj, 0)
 
     # Okna ma wymiar (-szerokosc_okna/2, szerokosc_okna/2)
     a = -szerokosc_okna/2
@@ -143,13 +179,16 @@ def add_single_square(obj, color, plansza):
         #     obj.stamp()
         #     obj.dot(15, 'red')
 
-def current_score(score=0):
-    pen = Turtle()
-    pen.penup()
-    pen.goto(0, szerokosc_okna/2)
-    pen.write(f'Your score is: {score}', font=10, align='center')
-    pen.hideturtle()
-    
+def current_score(obj, score):
+    obj.penup()
+    obj.goto(0, szerokosc_okna/2)
+    obj.clear()
+    obj.write(f'Your score is: {score}', font=("Arial", 12, "bold"), align='center')
+    obj.penup()
+    obj.goto(0, -szerokosc_okna/2-20)
+    obj.write(f'Use arrows, q ends', font=("Arial", 10, "bold"), align='center')
+    obj.fillcolor("blue")
+    obj.hideturtle()  
 
 def fill_board_list(plansza):
     global rozmiar_planszy
@@ -176,6 +215,10 @@ def add_worm_cor(worm, worm_list):
     if worm_tuple not in worm_list:
         worm_list.append(worm_tuple)
 
+def update_worm_cor(worm, worm_list):
+    worm_tuple = (worm.xcor(), worm.ycor())
+    worm_list[0] = worm_tuple
+
 def move_worm(worm):
     global rozmiar_planszy
     global pressed_key
@@ -193,5 +236,35 @@ def move_worm(worm):
         x = worm.xcor()
         worm.setx(x+odstep)
 
+def is_worm_outside_board(obj):
+    if (obj.xcor() > szerokosc_okna/2) or (obj.xcor() < -szerokosc_okna/2) or \
+        (obj.ycor() > szerokosc_okna/2) or (obj.ycor() < -szerokosc_okna/2):
+        return True
+    else:
+        return False
 
-ini_keyboard()
+def is_worm_collide_obj(worm_list, obj_list, plansza=0, color = 0):
+    for obj in obj_list:
+        for worm in worm_list:
+            if (worm[0] == obj.xcor()) and (worm[1] == obj.ycor()):
+                if color == "green":
+                    print("Add elem")
+                    add_single_square(obj, color, plansza)
+                return True
+    return False
+
+def is_worm_collide_stone(worm_list, stone_list):
+    return is_worm_collide_obj(worm_list, stone_list)
+
+def is_worm_eat_food(worm_list, food_list, plansza):
+    return is_worm_collide_obj(worm_list, food_list, plansza, "green")
+
+def print_game_over():
+    pen = Turtle()
+    pen.penup()
+    pen.goto(0, 0)
+    pen.color("red")
+    pen.write(f'GAME OVER', font=("Arial", 20, "bold"), align='center')
+    time.sleep(1)
+
+main()
